@@ -1,8 +1,9 @@
+import { router } from "expo-router";
 import {
     ScrollView,
     StyleSheet,
     Text,
-    TouchableOpacity
+    TouchableOpacity,
 } from "react-native";
 
 export default function HomeScreen() {
@@ -44,6 +45,13 @@ export default function HomeScreen() {
 
       <TouchableOpacity style={styles.button}>
         <Text style={styles.buttonText}>Moji termini</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.logoutButton}
+        onPress={() => router.replace("/")}
+      >
+        <Text style={styles.logoutText}>Odjavi se</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -94,13 +102,28 @@ const styles = StyleSheet.create({
     padding: 18,
     borderRadius: 18,
     marginTop: 20,
-    marginBottom: 50,
   },
 
   buttonText: {
     color: "#FFFFFF",
     textAlign: "center",
     fontSize: 17,
+    fontWeight: "700",
+  },
+
+  logoutButton: {
+    marginTop: 16,
+    marginBottom: 50,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#C97B63",
+  },
+
+  logoutText: {
+    textAlign: "center",
+    color: "#C97B63",
+    fontSize: 16,
     fontWeight: "700",
   },
 });
