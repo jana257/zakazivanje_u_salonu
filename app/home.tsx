@@ -8,7 +8,8 @@ import {
 export default function HomeScreen() {
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>Velora Hair</Text>
+      <Text style={styles.title}>Studio Kat</Text>
+
       <Text style={styles.subtitle}>
         Dobrodošla 👋 Izaberi uslugu
       </Text>

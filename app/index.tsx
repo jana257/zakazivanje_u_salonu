@@ -1,5 +1,10 @@
+import { router } from "expo-router";
 import { useState } from "react";
 import {
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
     StyleSheet,
     Text,
     TextInput,
@@ -9,82 +14,186 @@ import {
 
 export default function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true);
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [repeatPassword, setRepeatPassword] = useState("");
+
+  function handleSubmit() {
+    if (isLogin) {
+      if (!email || !password) {
+        Alert.alert("Greška", "Unesi email i lozinku.");
+        return;
+      }
+    } else {
+      if (!fullName || !phone || !email || !password || !repeatPassword) {
+        Alert.alert("Greška", "Popuni sva polja za registraciju.");
+        return;
+      }
+
+      if (password !== repeatPassword) {
+        Alert.alert("Greška", "Lozinke se ne poklapaju.");
+        return;
+      }
+    }
+
+    if (!email.includes("@")) {
+      Alert.alert("Greška", "Unesi ispravan email.");
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert("Greška", "Lozinka mora imati najmanje 6 karaktera.");
+      return;
+    }
+
+    router.push("/home");
+  }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.logo}>SalonBook</Text>
-      <Text style={styles.subtitle}>
-        {isLogin ? "Prijavi se na svoj nalog" : "Napravi novi nalog"}
-      </Text>
+    <KeyboardAvoidingView
+      style={styles.wrapper}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.card}>
+          <Text style={styles.logo}>Studio Kat</Text>
 
-      {!isLogin && (
-        <TextInput style={styles.input} placeholder="Ime i prezime" />
-      )}
+          <Text style={styles.subtitle}>
+            {isLogin ? "Prijavi se na svoj nalog" : "Kreiraj svoj nalog"}
+          </Text>
 
-      <TextInput style={styles.input} placeholder="Email" keyboardType="email-address" />
+          {!isLogin && (
+            <>
+              <Text style={styles.label}>Ime i prezime</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Unesi ime i prezime"
+                value={fullName}
+                onChangeText={setFullName}
+              />
 
-      <TextInput style={styles.input} placeholder="Lozinka" secureTextEntry />
+              <Text style={styles.label}>Broj telefona</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Unesi broj telefona"
+                keyboardType="phone-pad"
+                value={phone}
+                onChangeText={setPhone}
+              />
+            </>
+          )}
 
-      <TouchableOpacity style={styles.button}>
-        <Text style={styles.buttonText}>
-          {isLogin ? "Prijavi se" : "Registruj se"}
-        </Text>
-      </TouchableOpacity>
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Unesi email adresu"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
+          />
 
-      <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
-        <Text style={styles.switchText}>
-          {isLogin
-            ? "Nemaš nalog? Registruj se"
-            : "Imaš nalog? Prijavi se"}
-        </Text>
-      </TouchableOpacity>
-    </View>
+          <Text style={styles.label}>Lozinka</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Unesi lozinku"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
+
+          {!isLogin && (
+            <>
+              <Text style={styles.label}>Ponovi lozinku</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ponovi lozinku"
+                secureTextEntry
+                value={repeatPassword}
+                onChangeText={setRepeatPassword}
+              />
+            </>
+          )}
+
+          <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+            <Text style={styles.buttonText}>
+              {isLogin ? "Prijavi se" : "Registruj se"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
+            <Text style={styles.switchText}>
+              {isLogin
+                ? "Nemaš nalog? Registruj se"
+                : "Već imaš nalog? Prijavi se"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  wrapper: {
     flex: 1,
     backgroundColor: "#FFF7F1",
+  },
+  container: {
+    flexGrow: 1,
     justifyContent: "center",
+    padding: 22,
+  },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 28,
     padding: 24,
   },
   logo: {
     fontSize: 38,
-    fontWeight: "800",
+    fontWeight: "900",
     color: "#2B2B2B",
     textAlign: "center",
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: "#777",
     textAlign: "center",
-    marginBottom: 32,
+    marginBottom: 24,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#2B2B2B",
+    marginBottom: 6,
+    marginLeft: 4,
   },
   input: {
-    backgroundColor: "#FFFFFF",
-    padding: 16,
+    backgroundColor: "#FFF7F1",
+    padding: 15,
     borderRadius: 16,
     marginBottom: 14,
     fontSize: 16,
   },
   button: {
     backgroundColor: "#C97B63",
-    padding: 16,
-    borderRadius: 16,
+    padding: 17,
+    borderRadius: 17,
     marginTop: 8,
   },
   buttonText: {
     color: "#FFFFFF",
     textAlign: "center",
     fontSize: 17,
-    fontWeight: "700",
+    fontWeight: "800",
   },
   switchText: {
     marginTop: 22,
     textAlign: "center",
     color: "#C97B63",
-    fontWeight: "600",
+    fontWeight: "700",
   },
 });
