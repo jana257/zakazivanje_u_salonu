@@ -1,15 +1,15 @@
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function AuthScreen() {
@@ -61,7 +61,9 @@ export default function AuthScreen() {
           <Text style={styles.logo}>Studio Kat</Text>
 
           <Text style={styles.subtitle}>
-            {isLogin ? "Prijavi se na svoj nalog" : "Kreiraj svoj nalog"}
+            {isLogin
+              ? "Prijavi se na svoj nalog"
+              : "Kreiraj svoj nalog"}
           </Text>
 
           {!isLogin && (
@@ -70,6 +72,7 @@ export default function AuthScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Unesi ime i prezime"
+                placeholderTextColor="#8A817C"
                 value={fullName}
                 onChangeText={setFullName}
               />
@@ -78,6 +81,7 @@ export default function AuthScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Unesi broj telefona"
+                placeholderTextColor="#8A817C"
                 keyboardType="phone-pad"
                 value={phone}
                 onChangeText={setPhone}
@@ -89,6 +93,7 @@ export default function AuthScreen() {
           <TextInput
             style={styles.input}
             placeholder="Unesi email adresu"
+            placeholderTextColor="#8A817C"
             keyboardType="email-address"
             autoCapitalize="none"
             value={email}
@@ -99,6 +104,7 @@ export default function AuthScreen() {
           <TextInput
             style={styles.input}
             placeholder="Unesi lozinku"
+            placeholderTextColor="#8A817C"
             secureTextEntry
             value={password}
             onChangeText={setPassword}
@@ -110,6 +116,7 @@ export default function AuthScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Ponovi lozinku"
+                placeholderTextColor="#8A817C"
                 secureTextEntry
                 value={repeatPassword}
                 onChangeText={setRepeatPassword}
@@ -139,61 +146,71 @@ export default function AuthScreen() {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: "#FFF7F1",
+    backgroundColor: "#F8F5F2",
   },
+
   container: {
     flexGrow: 1,
     justifyContent: "center",
     padding: 22,
   },
+
   card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 28,
     padding: 24,
   },
+
   logo: {
     fontSize: 38,
     fontWeight: "900",
-    color: "#2B2B2B",
+    color: "#2E2A27",
     textAlign: "center",
     marginBottom: 8,
   },
+
   subtitle: {
     fontSize: 15,
-    color: "#777",
+    color: "#8A817C",
     textAlign: "center",
     marginBottom: 24,
   },
+
   label: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#2B2B2B",
+    color: "#2E2A27",
     marginBottom: 6,
     marginLeft: 4,
   },
+
   input: {
-    backgroundColor: "#FFF7F1",
+    backgroundColor: "#F8F5F2",
     padding: 15,
     borderRadius: 16,
     marginBottom: 14,
     fontSize: 16,
+    color: "#2E2A27",
   },
+
   button: {
-    backgroundColor: "#C97B63",
+    backgroundColor: "#B88A7B",
     padding: 17,
     borderRadius: 17,
     marginTop: 8,
   },
+
   buttonText: {
     color: "#FFFFFF",
     textAlign: "center",
     fontSize: 17,
     fontWeight: "800",
   },
+
   switchText: {
     marginTop: 22,
     textAlign: "center",
-    color: "#C97B63",
+    color: "#B88A7B",
     fontWeight: "700",
   },
 });
