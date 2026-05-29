@@ -9,22 +9,18 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import api from "../api/client";
 
 export default function MojiTerminiScreen() {
   const [termini, setTermini] = useState<any[]>([]);
 
   const ucitajTermine = async () => {
-    const userId = await AsyncStorage.getItem("userId");
+    const sacuvani = await AsyncStorage.getItem("termini");
 
-    if (!userId) {
-      setTermini([]);
-      return;
-    }
+    const terminiLista = sacuvani
+      ? JSON.parse(sacuvani)
+      : [];
 
-    const response = await api.get(`/appointments/${userId}`);
-
-    setTermini(response.data);
+    setTermini(terminiLista);
   };
 
   useFocusEffect(
@@ -33,7 +29,7 @@ export default function MojiTerminiScreen() {
     }, [])
   );
 
-  const obrisiTermin = async (id: number) => {
+  const obrisiTermin = async (id: string) => {
     Alert.alert(
       "Otkaži termin",
       "Da li ste sigurni da želite da otkažete termin?",
@@ -45,8 +41,16 @@ export default function MojiTerminiScreen() {
         {
           text: "Da",
           onPress: async () => {
-            await api.delete(`/appointments/${id}`);
-            ucitajTermine();
+            const noviTermini = termini.filter(
+              (item) => item.id !== id
+            );
+
+            setTermini(noviTermini);
+
+            await AsyncStorage.setItem(
+              "termini",
+              JSON.stringify(noviTermini)
+            );
           },
         },
       ]
@@ -59,25 +63,35 @@ export default function MojiTerminiScreen() {
 
       <FlatList
         data={termini}
-        keyExtractor={(item) => String(item.id)}
+        keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <Text style={styles.usluga}>{item.service}</Text>
+            <Text style={styles.usluga}>
+              {item.usluga}
+            </Text>
 
-            <Text style={styles.text}>Datum: {item.date}</Text>
+            <Text style={styles.text}>
+              Datum: {item.datum}
+            </Text>
 
-            <Text style={styles.text}>Vreme: {item.time}</Text>
+            <Text style={styles.text}>
+              Vreme: {item.vreme}
+            </Text>
 
             <TouchableOpacity
               style={styles.deleteButton}
               onPress={() => obrisiTermin(item.id)}
             >
-              <Text style={styles.deleteText}>Otkaži termin</Text>
+              <Text style={styles.deleteText}>
+                Otkaži termin
+              </Text>
             </TouchableOpacity>
           </View>
         )}
         ListEmptyComponent={
-          <Text style={styles.empty}>Nemate zakazane termine.</Text>
+          <Text style={styles.empty}>
+            Nemate zakazane termine.
+          </Text>
         }
       />
     </View>
