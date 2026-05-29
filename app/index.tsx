@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -11,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import api from "../api/client";
 
 export default function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true);
@@ -20,7 +22,7 @@ export default function AuthScreen() {
   const [password, setPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (isLogin) {
       if (!email || !password) {
         Alert.alert("Greška", "Unesi email i lozinku.");
@@ -48,7 +50,38 @@ export default function AuthScreen() {
       return;
     }
 
-    router.push("/home");
+    try {
+      if (isLogin) {
+        const response = await api.post("/login", {
+          email,
+          password,
+        });
+
+        await AsyncStorage.setItem("token", response.data.token);
+        await AsyncStorage.setItem("userId", String(response.data.userId));
+
+        router.push("/home");
+      } else {
+        await api.post("/register", {
+          email,
+          password,
+        });
+
+        Alert.alert("Uspešno", "Registracija je uspešna. Sada se prijavi.");
+        setIsLogin(true);
+        setFullName("");
+        setPhone("");
+        setPassword("");
+        setRepeatPassword("");
+      }
+    } catch (error: any) {
+      const poruka =
+        error.response?.data?.message ||
+        error.message ||
+        "Došlo je do greške.";
+
+      Alert.alert("Greška", poruka);
+    }
   }
 
   return (
@@ -61,9 +94,7 @@ export default function AuthScreen() {
           <Text style={styles.logo}>Studio Kat</Text>
 
           <Text style={styles.subtitle}>
-            {isLogin
-              ? "Prijavi se na svoj nalog"
-              : "Kreiraj svoj nalog"}
+            {isLogin ? "Prijavi se na svoj nalog" : "Kreiraj svoj nalog"}
           </Text>
 
           {!isLogin && (
@@ -148,19 +179,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F8F5F2",
   },
-
   container: {
     flexGrow: 1,
     justifyContent: "center",
     padding: 22,
   },
-
   card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 28,
     padding: 24,
   },
-
   logo: {
     fontSize: 38,
     fontWeight: "900",
@@ -168,14 +196,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 8,
   },
-
   subtitle: {
     fontSize: 15,
     color: "#8A817C",
     textAlign: "center",
     marginBottom: 24,
   },
-
   label: {
     fontSize: 14,
     fontWeight: "700",
@@ -183,7 +209,6 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     marginLeft: 4,
   },
-
   input: {
     backgroundColor: "#F8F5F2",
     padding: 15,
@@ -192,21 +217,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#2E2A27",
   },
-
   button: {
     backgroundColor: "#B88A7B",
     padding: 17,
     borderRadius: 17,
     marginTop: 8,
   },
-
   buttonText: {
     color: "#FFFFFF",
     textAlign: "center",
     fontSize: 17,
     fontWeight: "800",
   },
-
   switchText: {
     marginTop: 22,
     textAlign: "center",

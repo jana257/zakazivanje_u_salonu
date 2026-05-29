@@ -8,6 +8,7 @@ import {
     Text,
     TouchableOpacity,
 } from "react-native";
+import api from "../api/client";
 
 function napraviDatume() {
   const datumi = [];
@@ -45,39 +46,23 @@ export default function ZakaziScreen() {
       return;
     }
 
-    const noviTermin = {
-      id: Date.now().toString(),
-      usluga: String(usluga),
-      datum,
-      vreme,
-    };
+    try {
+      const userId = await AsyncStorage.getItem("userId");
 
-    const sacuvani = await AsyncStorage.getItem("termini");
+      await api.post("/appointments", {
+        userId,
+        service: usluga,
+        date: datum,
+        time: vreme,
+      });
 
-    const termini = sacuvani ? JSON.parse(sacuvani) : [];
-
-    const zauzetTermin = termini.find(
-      (termin: any) =>
-        termin.datum === datum && termin.vreme === vreme
-    );
-
-    if (zauzetTermin) {
+      router.push("/moji-termini");
+    } catch (error: any) {
       Alert.alert(
-        "Termin je zauzet",
-        "Izaberi drugi datum ili vreme."
+        "Greška",
+        error.response?.data?.message || "Greška pri zakazivanju."
       );
-
-      return;
     }
-
-    termini.push(noviTermin);
-
-    await AsyncStorage.setItem(
-      "termini",
-      JSON.stringify(termini)
-    );
-
-    router.push("/moji-termini");
   };
 
   return (
@@ -196,7 +181,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#FFFFFF",
     textAlign: "center",
-
     fontSize: 17,
     fontWeight: "700",
   },
