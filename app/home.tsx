@@ -1,4 +1,6 @@
 import { router } from "expo-router";
+import { useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   ScrollView,
   StyleSheet,
@@ -7,6 +9,24 @@ import {
 } from "react-native";
 
 export default function HomeScreen() {
+  // 🔥 ZAŠTITA RUTE (auth guard)
+  useEffect(() => {
+    const checkUser = async () => {
+      const user = await AsyncStorage.getItem("user");
+
+      if (!user) {
+        router.replace("/");
+      }
+    };
+
+    checkUser();
+  }, []);
+
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem("user");
+    router.replace("/");
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Studio Kat</Text>
@@ -54,7 +74,7 @@ export default function HomeScreen() {
 
       <TouchableOpacity
         style={styles.logoutButton}
-        onPress={() => router.replace("/")}
+        onPress={handleLogout}
       >
         <Text style={styles.logoutText}>Odjavi se</Text>
       </TouchableOpacity>

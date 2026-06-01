@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -12,6 +13,8 @@ import {
   View,
 } from "react-native";
 
+const API_URL = "http://172.20.10.2:3000";
+
 export default function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true);
   const [fullName, setFullName] = useState("");
@@ -20,35 +23,95 @@ export default function AuthScreen() {
   const [password, setPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
 
-  function handleSubmit() {
-    if (isLogin) {
+  async function handleSubmit() {
+    try {
+      /* =========================
+         BASIC VALIDACIJE
+      ========================= */
       if (!email || !password) {
-        Alert.alert("Greška", "Unesi email i lozinku.");
-        return;
-      }
-    } else {
-      if (!fullName || !phone || !email || !password || !repeatPassword) {
-        Alert.alert("Greška", "Popuni sva polja za registraciju.");
+        Alert.alert("Greška", "Unesite email i lozinku.");
         return;
       }
 
-      if (password !== repeatPassword) {
-        Alert.alert("Greška", "Lozinke se ne poklapaju.");
+      if (!email.includes("@")) {
+        Alert.alert("Greška", "Unesite ispravan email.");
         return;
       }
-    }
 
-    if (!email.includes("@")) {
-      Alert.alert("Greška", "Unesi ispravan email.");
-      return;
-    }
+      if (password.length < 6) {
+        Alert.alert("Greška", "Lozinka mora imati najmanje 6 karaktera.");
+        return;
+      }
 
-    if (password.length < 6) {
-      Alert.alert("Greška", "Lozinka mora imati najmanje 6 karaktera.");
-      return;
-    }
+      /* =========================
+         LOGIN
+      ========================= */
+      if (isLogin) {
+        const res = await fetch(`${API_URL}/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
 
-    router.push("/home");
+        const data = await res.json();
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            Alert.alert("Greška", "Nalog ne postoji ili lozinka nije tačna.");
+          } else {
+            Alert.alert("Greška", data?.message || "Došlo je do greške.");
+          }
+          return;
+        }
+
+        // 🔥 KLJUČNO - čuvamo user-a
+        await AsyncStorage.setItem(
+          "user",
+          JSON.stringify({
+            userId: data.userId,
+            email,
+          })
+        );
+
+        Alert.alert("Uspeh", "Uspešno ste prijavljeni.");
+
+        // 🔥 prebacivanje na home
+        router.replace("/home");
+      }
+
+      /* =========================
+         REGISTER
+      ========================= */
+      else {
+        if (!fullName || !phone || !repeatPassword) {
+          Alert.alert("Greška", "Popunite sva polja za registraciju.");
+          return;
+        }
+
+        if (password !== repeatPassword) {
+          Alert.alert("Greška", "Lozinke se ne poklapaju.");
+          return;
+        }
+
+        const res = await fetch(`${API_URL}/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          Alert.alert("Greška", data?.message || "Greška pri registraciji.");
+          return;
+        }
+
+        Alert.alert("Uspešno ste se registrovali.");
+        setIsLogin(true);
+      }
+    } catch {
+      Alert.alert("Greška", "Server nije dostupan.");
+    }
   }
 
   return (
@@ -61,9 +124,7 @@ export default function AuthScreen() {
           <Text style={styles.logo}>Studio Kat</Text>
 
           <Text style={styles.subtitle}>
-            {isLogin
-              ? "Prijavi se na svoj nalog"
-              : "Kreiraj svoj nalog"}
+            {isLogin ? "Prijavi se na svoj nalog" : "Kreiraj svoj nalog"}
           </Text>
 
           {!isLogin && (
@@ -143,6 +204,9 @@ export default function AuthScreen() {
   );
 }
 
+/* =========================
+   STYLES (NE DIRAMO DIZAJN)
+========================= */
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
