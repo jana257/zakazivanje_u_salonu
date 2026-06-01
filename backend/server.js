@@ -9,9 +9,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-/* =========================
-   SQLITE DATABASE
-========================= */
+
 const db = new sqlite3.Database("./database.db", (err) => {
   if (err) {
     console.log("DB error:", err);
@@ -20,9 +18,7 @@ const db = new sqlite3.Database("./database.db", (err) => {
   }
 });
 
-/* =========================
-   INIT TABLES
-========================= */
+
 db.serialize(() => {
   db.run(`
     CREATE TABLE IF NOT EXISTS users (
@@ -43,9 +39,7 @@ db.serialize(() => {
   `);
 });
 
-/* =========================
-   REGISTER
-========================= */
+
 app.post("/register", (req, res) => {
   const { email, password } = req.body;
 
@@ -64,9 +58,7 @@ app.post("/register", (req, res) => {
   );
 });
 
-/* =========================
-   LOGIN
-========================= */
+
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
 
@@ -99,9 +91,6 @@ app.post("/login", (req, res) => {
   );
 });
 
-/* =========================
-   APPOINTMENTS
-========================= */
 app.post("/appointments", (req, res) => {
   const { userId, service, date, time } = req.body;
 
@@ -128,9 +117,6 @@ app.post("/appointments", (req, res) => {
   );
 });
 
-/* =========================
-   GET APPOINTMENTS
-========================= */
 app.get("/appointments/:userId", (req, res) => {
   db.all(
     "SELECT * FROM appointments WHERE userId=?",
@@ -143,9 +129,7 @@ app.get("/appointments/:userId", (req, res) => {
   );
 });
 
-/* =========================
-   DELETE APPOINTMENT
-========================= */
+
 app.delete("/appointments/:id", (req, res) => {
   db.run(
     "DELETE FROM appointments WHERE id=?",
@@ -161,19 +145,18 @@ app.delete("/appointments/:id", (req, res) => {
 });
 
 
-/* =========================
-   START SERVER
-========================= */
+
 const PORT = 3000;
 
 // app.listen(PORT, "0.0.0.0", () => {
 //   console.log("Server running on http://192.168.0.20:3000");
 // });
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log("Server running on http://0.0.0.0:" + PORT);
-});
 app.get("/", (req, res) => {
   res.send("Backend radi 🚀");
+});
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log("Server running on http://0.0.0.0:" + PORT);
 });
 
