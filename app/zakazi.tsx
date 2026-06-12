@@ -2,11 +2,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
 } from "react-native";
 
 function napraviDatume() {
@@ -14,7 +14,6 @@ function napraviDatume() {
 
   for (let i = 0; i < 7; i++) {
     const datum = new Date();
-
     datum.setDate(datum.getDate() + i);
 
     const formatiranDatum = datum.toLocaleDateString("sr-RS", {
@@ -30,7 +29,6 @@ function napraviDatume() {
 }
 
 const datumi = napraviDatume();
-
 const vremena = ["10:00", "12:00", "14:00", "16:00", "18:00"];
 
 export default function ZakaziScreen() {
@@ -45,15 +43,17 @@ export default function ZakaziScreen() {
       return;
     }
 
+    const userId = await AsyncStorage.getItem("userId");
+
     const noviTermin = {
       id: Date.now().toString(),
+      userId, //KLJUČNO
       usluga: String(usluga),
       datum,
       vreme,
     };
 
     const sacuvani = await AsyncStorage.getItem("termini");
-
     const termini = sacuvani ? JSON.parse(sacuvani) : [];
 
     const zauzetTermin = termini.find(
@@ -62,20 +62,13 @@ export default function ZakaziScreen() {
     );
 
     if (zauzetTermin) {
-      Alert.alert(
-        "Termin je zauzet",
-        "Izaberi drugi datum ili vreme."
-      );
-
+      Alert.alert("Termin je zauzet", "Izaberi drugi datum ili vreme.");
       return;
     }
 
     termini.push(noviTermin);
 
-    await AsyncStorage.setItem(
-      "termini",
-      JSON.stringify(termini)
-    );
+    await AsyncStorage.setItem("termini", JSON.stringify(termini));
 
     router.push("/moji-termini");
   };
@@ -88,7 +81,6 @@ export default function ZakaziScreen() {
       <Text style={styles.title}>Zakazivanje</Text>
 
       <Text style={styles.label}>Izabrana usluga:</Text>
-
       <Text style={styles.service}>{usluga}</Text>
 
       <Text style={styles.label}>Izaberi datum:</Text>
@@ -121,13 +113,8 @@ export default function ZakaziScreen() {
         </TouchableOpacity>
       ))}
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={potvrdiTermin}
-      >
-        <Text style={styles.buttonText}>
-          Potvrdi termin
-        </Text>
+      <TouchableOpacity style={styles.button} onPress={potvrdiTermin}>
+        <Text style={styles.buttonText}>Potvrdi termin</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -140,32 +127,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 60,
   },
-
-  content: {
-    paddingBottom: 100,
-  },
-
-  title: {
-    fontSize: 32,
-    fontWeight: "800",
-    color: "#2E2A27",
-    marginBottom: 20,
-  },
-
-  label: {
-    fontSize: 16,
-    color: "#8A817C",
-    marginTop: 10,
-    marginBottom: 8,
-  },
-
-  service: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#2E2A27",
-    marginBottom: 10,
-  },
-
+  content: { paddingBottom: 100 },
+  title: { fontSize: 32, fontWeight: "800", color: "#2E2A27", marginBottom: 20 },
+  label: { fontSize: 16, color: "#8A817C", marginTop: 10, marginBottom: 8 },
+  service: { fontSize: 24, fontWeight: "700", color: "#2E2A27", marginBottom: 10 },
   option: {
     backgroundColor: "#FFFFFF",
     padding: 14,
@@ -174,29 +139,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#FFFFFF",
   },
-
   selected: {
     borderColor: "#B88A7B",
     backgroundColor: "#F1DFD9",
   },
-
   optionText: {
     fontSize: 16,
     color: "#2E2A27",
     fontWeight: "600",
   },
-
   button: {
     backgroundColor: "#B88A7B",
     padding: 18,
     borderRadius: 18,
     marginTop: 24,
   },
-
   buttonText: {
     color: "#FFFFFF",
     textAlign: "center",
-
     fontSize: 17,
     fontWeight: "700",
   },

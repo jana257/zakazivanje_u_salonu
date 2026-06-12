@@ -1,6 +1,6 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useEffect } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   ScrollView,
   StyleSheet,
@@ -9,7 +9,7 @@ import {
 } from "react-native";
 
 export default function HomeScreen() {
-  // 🔥 ZAŠTITA RUTE (auth guard)
+  //ZAŠTITA RUTE (auth guard)
   useEffect(() => {
     const checkUser = async () => {
       const user = await AsyncStorage.getItem("user");

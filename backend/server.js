@@ -166,14 +166,8 @@ app.delete("/appointments/:id", (req, res) => {
 ========================= */
 const PORT = 3000;
 
-// app.listen(PORT, "0.0.0.0", () => {
-//   console.log("Server running on http://192.168.0.20:3000");
-// });
-
 app.listen(PORT, "0.0.0.0", () => {
   console.log("Server running on http://0.0.0.0:" + PORT);
 });
-app.get("/", (req, res) => {
-  res.send("Backend radi 🚀");
-});
+
 

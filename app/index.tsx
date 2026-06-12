@@ -64,7 +64,6 @@ export default function AuthScreen() {
           return;
         }
 
-        // 🔥 KLJUČNO - čuvamo user-a
         await AsyncStorage.setItem(
           "user",
           JSON.stringify({
@@ -73,9 +72,14 @@ export default function AuthScreen() {
           })
         );
 
+        await AsyncStorage.setItem(
+          "userId",
+          String(data.userId)
+        );
+
         Alert.alert("Uspeh", "Uspešno ste prijavljeni.");
 
-        // 🔥 prebacivanje na home
+        //prebacivanje na home
         router.replace("/home");
       }
 
