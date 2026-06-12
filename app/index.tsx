@@ -13,7 +13,7 @@ import {
   View,
 } from "react-native";
 
-const API_URL = "http://172.20.10.2:3000";
+const API_URL = "http://192.168.1.65:3000";
 
 export default function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true);
@@ -25,9 +25,6 @@ export default function AuthScreen() {
 
   async function handleSubmit() {
     try {
-      /* =========================
-         BASIC VALIDACIJE
-      ========================= */
       if (!email || !password) {
         Alert.alert("Greška", "Unesite email i lozinku.");
         return;
@@ -43,9 +40,7 @@ export default function AuthScreen() {
         return;
       }
 
-      /* =========================
-         LOGIN
-      ========================= */
+  
       if (isLogin) {
         const res = await fetch(`${API_URL}/login`, {
           method: "POST",
@@ -80,12 +75,10 @@ export default function AuthScreen() {
         Alert.alert("Uspeh", "Uspešno ste prijavljeni.");
 
         //prebacivanje na home
+      
         router.replace("/home");
       }
 
-      /* =========================
-         REGISTER
-      ========================= */
       else {
         if (!fullName || !phone || !repeatPassword) {
           Alert.alert("Greška", "Popunite sva polja za registraciju.");
@@ -208,9 +201,7 @@ export default function AuthScreen() {
   );
 }
 
-/* =========================
-   STYLES (NE DIRAMO DIZAJN)
-========================= */
+
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
