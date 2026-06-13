@@ -10,20 +10,21 @@ import {
   View,
 } from "react-native";
 
+const API_URL = "http://172.20.10.2:3000";
+
 export default function MojiTerminiScreen() {
   const [termini, setTermini] = useState<any[]>([]);
 
   const ucitajTermine = async () => {
-    const sacuvani = await AsyncStorage.getItem("termini");
-    const currentUserId = await AsyncStorage.getItem("userId");
+    const user = await AsyncStorage.getItem("user");
+    const parsed = user ? JSON.parse(user) : null;
 
-    const sviTermini = sacuvani ? JSON.parse(sacuvani) : [];
-
-    const mojiTermini = sviTermini.filter(
-      (t: any) => t.userId === currentUserId
+    const res = await fetch(
+      `${API_URL}/appointments/${parsed.userId}`
     );
 
-    setTermini(mojiTermini);
+    const data = await res.json();
+    setTermini(data);
   };
 
   useFocusEffect(
@@ -33,39 +34,53 @@ export default function MojiTerminiScreen() {
   );
 
   const obrisiTermin = async (id: string) => {
-    Alert.alert(
-      "Otkaži termin",
-      "Da li ste sigurni da želite da otkažete termin?",
-      [
-        {
-          text: "Ne",
-          style: "cancel",
+    Alert.alert("Otkaži termin", "Da li ste sigurni?", [
+      { text: "Ne", style: "cancel" },
+      {
+        text: "Da",
+        onPress: async () => {
+          await fetch(`${API_URL}/appointments/${id}`, {
+            method: "DELETE",
+          });
+
+          ucitajTermine();
         },
-        {
-          text: "Da",
-          onPress: async () => {
-            const sacuvani = await AsyncStorage.getItem("termini");
-            const currentUserId = await AsyncStorage.getItem("userId");
+      },
+    ]);
+  };
 
-            const sviTermini = sacuvani ? JSON.parse(sacuvani) : [];
+  // ✅ DODATO - IZMENA TERMINA
+  const izmeniTermin = async (item: any) => {
+    Alert.prompt(
+      "Izmena termina",
+      "Unesi novo vreme (npr 14:00)",
+      async (novoVreme) => {
+        if (!novoVreme) return;
 
-            const noviSvi = sviTermini.filter(
-              (item: any) => item.id !== id
-            );
+        const res = await fetch(
+          `${API_URL}/appointments/${item.id}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              service: item.service,
+              date: item.date,
+              time: novoVreme,
+            }),
+          }
+        );
 
-            const filtrirani = noviSvi.filter(
-              (t: any) => t.userId === currentUserId
-            );
+        const data = await res.json();
 
-            setTermini(filtrirani);
+        if (!res.ok) {
+          Alert.alert("Greška", data.message);
+          return;
+        }
 
-            await AsyncStorage.setItem(
-              "termini",
-              JSON.stringify(noviSvi)
-            );
-          },
-        },
-      ]
+        ucitajTermine();
+      }
     );
   };
 
@@ -75,12 +90,12 @@ export default function MojiTerminiScreen() {
 
       <FlatList
         data={termini}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <Text style={styles.usluga}>{item.usluga}</Text>
-            <Text style={styles.text}>Datum: {item.datum}</Text>
-            <Text style={styles.text}>Vreme: {item.vreme}</Text>
+            <Text style={styles.usluga}>{item.service}</Text>
+            <Text style={styles.text}>Datum: {item.date}</Text>
+            <Text style={styles.text}>Vreme: {item.time}</Text>
 
             <TouchableOpacity
               style={styles.deleteButton}
@@ -88,18 +103,22 @@ export default function MojiTerminiScreen() {
             >
               <Text style={styles.deleteText}>Otkaži termin</Text>
             </TouchableOpacity>
+
+            {/* ✅ DODATO DUGME */}
+            <TouchableOpacity
+              style={[styles.deleteButton, { backgroundColor: "#6C8EBF" }]}
+              onPress={() => izmeniTermin(item)}
+            >
+              <Text style={styles.deleteText}>Izmeni termin</Text>
+            </TouchableOpacity>
           </View>
         )}
-        ListEmptyComponent={
-          <Text style={styles.empty}>
-            Nemate zakazane termine.
-          </Text>
-        }
       />
     </View>
   );
 }
 
+/* styles OSTAJU ISTI */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -141,9 +160,5 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontWeight: "700",
     fontSize: 15,
-  },
-  empty: {
-    fontSize: 16,
-    color: "#8A817C",
   },
 });

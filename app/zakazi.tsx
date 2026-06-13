@@ -31,6 +31,8 @@ function napraviDatume() {
 const datumi = napraviDatume();
 const vremena = ["10:00", "12:00", "14:00", "16:00", "18:00"];
 
+const API_URL = "http://172.20.10.2:3000";
+
 export default function ZakaziScreen() {
   const { usluga } = useLocalSearchParams();
 
@@ -43,32 +45,26 @@ export default function ZakaziScreen() {
       return;
     }
 
-    const userId = await AsyncStorage.getItem("userId");
+    const user = await AsyncStorage.getItem("user");
+    const parsed = user ? JSON.parse(user) : null;
 
-    const noviTermin = {
-      id: Date.now().toString(),
-      userId, //KLJUČNO
-      usluga: String(usluga),
-      datum,
-      vreme,
-    };
+    const res = await fetch(`${API_URL}/appointments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: parsed?.userId,
+        service: String(usluga),
+        date: datum,
+        time: vreme,
+      }),
+    });
 
-    const sacuvani = await AsyncStorage.getItem("termini");
-    const termini = sacuvani ? JSON.parse(sacuvani) : [];
+    const data = await res.json();
 
-    const zauzetTermin = termini.find(
-      (termin: any) =>
-        termin.datum === datum && termin.vreme === vreme
-    );
-
-    if (zauzetTermin) {
-      Alert.alert("Termin je zauzet", "Izaberi drugi datum ili vreme.");
+    if (!res.ok) {
+      Alert.alert("Greška", data.message);
       return;
     }
-
-    termini.push(noviTermin);
-
-    await AsyncStorage.setItem("termini", JSON.stringify(termini));
 
     router.push("/moji-termini");
   };
@@ -88,10 +84,7 @@ export default function ZakaziScreen() {
       {datumi.map((item) => (
         <TouchableOpacity
           key={item}
-          style={[
-            styles.option,
-            datum === item && styles.selected,
-          ]}
+          style={[styles.option, datum === item && styles.selected]}
           onPress={() => setDatum(item)}
         >
           <Text style={styles.optionText}>{item}</Text>
@@ -103,10 +96,7 @@ export default function ZakaziScreen() {
       {vremena.map((item) => (
         <TouchableOpacity
           key={item}
-          style={[
-            styles.option,
-            vreme === item && styles.selected,
-          ]}
+          style={[styles.option, vreme === item && styles.selected]}
           onPress={() => setVreme(item)}
         >
           <Text style={styles.optionText}>{item}</Text>
@@ -120,6 +110,7 @@ export default function ZakaziScreen() {
   );
 }
 
+/* styles OSTAJU ISTI */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
