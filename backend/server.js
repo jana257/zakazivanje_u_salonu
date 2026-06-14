@@ -10,11 +10,8 @@ app.use(cors());
 app.use(express.json());
 
 const db = new sqlite3.Database("./database.db", (err) => {
-  if (err) {
-    console.log("DB error:", err);
-  } else {
-    console.log("SQLite connected");
-  }
+  if (err) console.log("DB error:", err);
+  else console.log("SQLite connected");
 });
 
 /* =========================
@@ -33,7 +30,7 @@ db.serialize(() => {
     CREATE TABLE IF NOT EXISTS appointments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       userId INTEGER,
-      service TEXT,
+      services TEXT,
       date TEXT,
       time TEXT
     )
@@ -98,10 +95,13 @@ app.post("/login", (req, res) => {
 
 /* =========================
    CREATE APPOINTMENT
-   (NE DOZVOLJAVA DUPLIKATE)
 ========================= */
 app.post("/appointments", (req, res) => {
-  const { userId, service, date, time } = req.body;
+  let { userId, services, date, time } = req.body;
+
+  if (!userId || !services || !date || !time) {
+    return res.status(400).json({ message: "Nedostaju podaci" });
+  }
 
   db.get(
     "SELECT * FROM appointments WHERE date = ? AND time = ?",
@@ -114,11 +114,11 @@ app.post("/appointments", (req, res) => {
       }
 
       db.run(
-        "INSERT INTO appointments (userId, service, date, time) VALUES (?, ?, ?, ?)",
-        [userId, service, date, time],
+        "INSERT INTO appointments (userId, services, date, time) VALUES (?, ?, ?, ?)",
+        [userId, services, date, time],
         function (err) {
           if (err) {
-            return res.status(500).json({ message: "Greška pri upisu" });
+            return res.status(500).json({ message: "Greška" });
           }
 
           res.json({ message: "Termin dodat" });
@@ -129,16 +129,54 @@ app.post("/appointments", (req, res) => {
 });
 
 /* =========================
-   GET USER APPOINTMENTS
+   GET APPOINTMENTS BY USER
 ========================= */
 app.get("/appointments/:userId", (req, res) => {
+  const userId = parseInt(req.params.userId, 10);
+
+  if (isNaN(userId)) {
+    return res.status(400).json({
+      message: "Nevalidan userId",
+      appointments: [],
+    });
+  }
+
   db.all(
     "SELECT * FROM appointments WHERE userId = ?",
-    [req.params.userId],
+    [userId],
     (err, rows) => {
-      if (err) return res.status(500).json([]);
+      if (err) {
+        return res.status(500).json({
+          message: "Greška na serveru",
+          appointments: [],
+        });
+      }
 
-      res.json(rows);
+      res.json({
+        message: "OK",
+        appointments: rows,
+      });
+    }
+  );
+});
+
+/* =========================
+   GET OCCUPIED TIMES (🔥 BITNO)
+========================= */
+app.get("/appointments/occupied/:date", (req, res) => {
+  const { date } = req.params;
+
+  db.all(
+    "SELECT time FROM appointments WHERE date = ?",
+    [date],
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ message: "Greška" });
+      }
+
+      res.json({
+        occupied: rows.map((r) => r.time),
+      });
     }
   );
 });
@@ -151,9 +189,7 @@ app.delete("/appointments/:id", (req, res) => {
     "DELETE FROM appointments WHERE id = ?",
     [req.params.id],
     function (err) {
-      if (err) {
-        return res.status(500).json({ message: "Greška" });
-      }
+      if (err) return res.status(500).json({ message: "Greška" });
 
       res.json({ message: "Obrisano" });
     }
@@ -161,64 +197,39 @@ app.delete("/appointments/:id", (req, res) => {
 });
 
 /* =========================
-   UPDATE APPOINTMENT
-   - zabrana ako je isti dan
-   - zabrana ako je termin zauzet
+   UPDATE APPOINTMENT (FIXED + PROVERA)
 ========================= */
 app.put("/appointments/:id", (req, res) => {
   const { id } = req.params;
-  const { service, date, time } = req.body;
+  const { services, date, time } = req.body;
 
+  // 🔥 PROVERA DA LI JE TERMIN ZAUZET
   db.get(
-    "SELECT * FROM appointments WHERE id = ?",
-    [id],
-    (err, current) => {
-      if (err) return res.status(500).json({ message: "Greška" });
-
-      if (!current) {
-        return res.status(404).json({ message: "Termin ne postoji" });
+    `SELECT * FROM appointments 
+     WHERE date = ? AND time = ? AND id != ?`,
+    [date, time, id],
+    (err, row) => {
+      if (err) {
+        return res.status(500).json({ message: "Greška" });
       }
 
-      // zabrana izmene na isti dan
-      const today = new Date()
-        .toLocaleDateString("sr-RS", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        });
-
-      if (current.date === today) {
+      if (row) {
         return res.status(400).json({
-          message: "Ne možeš menjati termin na dan zakazanog termina",
+          message: "Termin je zauzet",
         });
       }
 
-      // provera zauzetosti
-      db.get(
-        "SELECT * FROM appointments WHERE date = ? AND time = ? AND id != ?",
-        [date, time, id],
-        (err, taken) => {
-          if (err) return res.status(500).json({ message: "Greška" });
-
-          if (taken) {
-            return res.status(400).json({
-              message: "Termin je već zauzet",
-            });
+      db.run(
+        `UPDATE appointments
+         SET services = ?, date = ?, time = ?
+         WHERE id = ?`,
+        [services, date, time, id],
+        function (err) {
+          if (err) {
+            return res.status(500).json({ message: "Greška" });
           }
 
-          db.run(
-            `UPDATE appointments
-             SET service = ?, date = ?, time = ?
-             WHERE id = ?`,
-            [service, date, time, id],
-            function (err) {
-              if (err) {
-                return res.status(500).json({ message: "Greška" });
-              }
-
-              res.json({ message: "Termin ažuriran" });
-            }
-          );
+          res.json({ message: "Termin ažuriran" });
         }
       );
     }
@@ -229,7 +240,6 @@ app.put("/appointments/:id", (req, res) => {
    START SERVER
 ========================= */
 const PORT = 3000;
-
 app.listen(PORT, "0.0.0.0", () => {
   console.log("Server running on http://0.0.0.0:" + PORT);
 });

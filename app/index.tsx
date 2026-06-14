@@ -15,6 +15,7 @@ import {
 
 const API_URL = "http://172.20.10.2:3000";
 
+
 export default function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true);
   const [fullName, setFullName] = useState("");
@@ -118,7 +119,7 @@ export default function AuthScreen() {
     >
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.card}>
-          <Text style={styles.logo}>Studio Kat</Text>
+          <Text style={styles.logo}>The Hair Studio</Text>
 
           <Text style={styles.subtitle}>
             {isLogin ? "Prijavi se na svoj nalog" : "Kreiraj svoj nalog"}
@@ -221,7 +222,7 @@ const styles = StyleSheet.create({
   },
 
   logo: {
-    fontSize: 38,
+    fontSize: 35,
     fontWeight: "900",
     color: "#2E2A27",
     textAlign: "center",

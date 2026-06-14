@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router, useLocalSearchParams } from "expo-router";
+import { router } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
@@ -8,6 +8,7 @@ import {
   Text,
   TouchableOpacity,
 } from "react-native";
+
 
 function napraviDatume() {
   const datumi = [];
@@ -34,14 +35,22 @@ const vremena = ["10:00", "12:00", "14:00", "16:00", "18:00"];
 const API_URL = "http://172.20.10.2:3000";
 
 export default function ZakaziScreen() {
-  const { usluga } = useLocalSearchParams();
 
   const [datum, setDatum] = useState("");
   const [vreme, setVreme] = useState("");
+  const [usluge, setUsluge] = useState<string[]>([]);
+
+  const toggleUsluga = (naziv: string) => {
+    if (usluge.includes(naziv)) {
+      setUsluge(usluge.filter((u) => u !== naziv));
+    } else {
+      setUsluge([...usluge, naziv]);
+    }
+  };
 
   const potvrdiTermin = async () => {
-    if (!datum || !vreme) {
-      Alert.alert("Greška", "Izaberi datum i vreme termina.");
+    if (!datum || !vreme || usluge.length === 0) {
+      Alert.alert("Greška", "Izaberi usluge, datum i vreme termina.");
       return;
     }
 
@@ -53,7 +62,7 @@ export default function ZakaziScreen() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         userId: parsed?.userId,
-        service: String(usluga),
+        services: usluge.join(", "),
         date: datum,
         time: vreme,
       }),
@@ -76,8 +85,25 @@ export default function ZakaziScreen() {
     >
       <Text style={styles.title}>Zakazivanje</Text>
 
-      <Text style={styles.label}>Izabrana usluga:</Text>
-      <Text style={styles.service}>{usluga}</Text>
+      <Text style={styles.label}>Izaberi usluge:</Text>
+
+      {[
+        "Šišanje",
+        "Feniranje",
+        "Farbanje",
+        "Svečana frizura",
+      ].map((item) => (
+        <TouchableOpacity
+          key={item}
+          style={[
+            styles.option,
+            usluge.includes(item) && styles.selected,
+          ]}
+          onPress={() => toggleUsluga(item)}
+        >
+          <Text style={styles.optionText}>{item}</Text>
+        </TouchableOpacity>
+      ))}
 
       <Text style={styles.label}>Izaberi datum:</Text>
 
@@ -109,6 +135,11 @@ export default function ZakaziScreen() {
     </ScrollView>
   );
 }
+
+
+
+
+
 
 /* styles OSTAJU ISTI */
 const styles = StyleSheet.create({
