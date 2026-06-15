@@ -74,7 +74,7 @@ export default function AuthScreen() {
         );
 
         Alert.alert("Uspeh", "Uspešno ste prijavljeni.");
-              
+
         router.replace("/home");
       }
 
@@ -109,7 +109,7 @@ export default function AuthScreen() {
       Alert.alert("Greška", "Server nije dostupan.");
     }
   }
-
+  
   return (
     <KeyboardAvoidingView
       style={styles.wrapper}

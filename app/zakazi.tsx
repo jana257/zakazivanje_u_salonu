@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
 } from "react-native";
 
-
 function napraviDatume() {
   const datumi = [];
 

@@ -1,12 +1,12 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const API_URL = "http://172.20.10.2:3000";

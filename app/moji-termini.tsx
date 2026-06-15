@@ -261,7 +261,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  /* ===== ADDED ONLY ===== */
   expiredCard: {
     backgroundColor: "#EDEDED",
     opacity: 0.7,
