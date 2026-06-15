@@ -136,12 +136,6 @@ export default function ZakaziScreen() {
   );
 }
 
-
-
-
-
-
-/* styles OSTAJU ISTI */
 const styles = StyleSheet.create({
   container: {
     flex: 1,

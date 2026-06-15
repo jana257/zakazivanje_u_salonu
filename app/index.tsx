@@ -74,9 +74,7 @@ export default function AuthScreen() {
         );
 
         Alert.alert("Uspeh", "Uspešno ste prijavljeni.");
-
-        //prebacivanje na home
-      
+              
         router.replace("/home");
       }
 

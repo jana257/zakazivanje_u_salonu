@@ -14,7 +14,7 @@ const db = new sqlite3.Database("./database.db", (err) => {
   else console.log("SQLite connected");
 });
 
-/* =========================
+/* ====================
    TABLES
 ========================= */
 db.serialize(() => {
@@ -37,7 +37,7 @@ db.serialize(() => {
   `);
 });
 
-/* =========================
+/* ====================
    REGISTER
 ========================= */
 app.post("/register", (req, res) => {
@@ -58,7 +58,7 @@ app.post("/register", (req, res) => {
   );
 });
 
-/* =========================
+/* =================
    LOGIN
 ========================= */
 app.post("/login", (req, res) => {
@@ -93,7 +93,7 @@ app.post("/login", (req, res) => {
   );
 });
 
-/* =========================
+/* =======================
    CREATE APPOINTMENT
 ========================= */
 app.post("/appointments", (req, res) => {
@@ -160,8 +160,8 @@ app.get("/appointments/:userId", (req, res) => {
   );
 });
 
-/* =========================
-   GET OCCUPIED TIMES (🔥 BITNO)
+/* ===================
+   GET OCCUPIED TIMES
 ========================= */
 app.get("/appointments/occupied/:date", (req, res) => {
   const { date } = req.params;
@@ -181,7 +181,7 @@ app.get("/appointments/occupied/:date", (req, res) => {
   );
 });
 
-/* =========================
+/* ======================
    DELETE APPOINTMENT
 ========================= */
 app.delete("/appointments/:id", (req, res) => {
@@ -196,14 +196,14 @@ app.delete("/appointments/:id", (req, res) => {
   );
 });
 
-/* =========================
-   UPDATE APPOINTMENT (FIXED + PROVERA)
+/* ===================
+   UPDATE APPOINTMENT
 ========================= */
 app.put("/appointments/:id", (req, res) => {
   const { id } = req.params;
   const { services, date, time } = req.body;
 
-  // 🔥 PROVERA DA LI JE TERMIN ZAUZET
+  //PROVERA DA LI JE TERMIN ZAUZET
   db.get(
     `SELECT * FROM appointments 
      WHERE date = ? AND time = ? AND id != ?`,
@@ -236,7 +236,7 @@ app.put("/appointments/:id", (req, res) => {
   );
 });
 
-/* =========================
+/* ===================
    START SERVER
 ========================= */
 const PORT = 3000;

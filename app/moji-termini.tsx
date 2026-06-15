@@ -107,9 +107,8 @@ export default function MojiTerminiScreen() {
     return;
   }
 
-  // OTVARA SE LISTA TERMINA (isti ekran kao zakazivanje)
   router.push({
-    pathname: "/select-time", // napravi ovaj screen
+    pathname: "/select-time",
     params: {
       appointmentId: item.id,
       date: item.date,
@@ -203,9 +202,6 @@ export default function MojiTerminiScreen() {
   );
 }
 
-/* =========================
-   STYLES (NIŠTA NE DIRAM, SAMO DODAJEM)
-========================= */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
