@@ -32,7 +32,7 @@ export default function HomeScreen() {
 
       <Text style={styles.subtitle}>Dobrodošla</Text>
 
-      {/* jedno zakzivanje */}
+      
       <TouchableOpacity
         style={styles.button}
         onPress={() => router.push("/zakazi")}

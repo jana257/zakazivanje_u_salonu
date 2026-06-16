@@ -236,37 +236,55 @@ app.delete("/appointments/:id", (req, res) => {
 
 app.put("/appointments/:id", (req, res) => {
   const { id } = req.params;
-  const { service, date, time } = req.body;
+  let { service, date, time } = req.body;
 
-  if (!service || !date || !time) {
-    return res.status(400).json({ message: "Nedostaju podaci" });
-  }
-
-  const newStart = timeToMinutes(time);
-  const endTime = calculateEndTime(time, service);
-  const newEnd = timeToMinutes(endTime);
-
-  db.all("SELECT * FROM appointments WHERE date = ? AND id != ?", [date, id], (err, rows) => {
+  db.get("SELECT * FROM appointments WHERE id = ?", [id], (err, current) => {
     if (err) return res.status(500).json({ message: "Greška" });
 
-    const conflict = rows.some((appointment) => {
-      const existingStart = timeToMinutes(appointment.time);
-      const existingEnd = timeToMinutes(appointment.endTime || appointment.time);
-
-      return newStart < existingEnd && newEnd > existingStart;
-    });
-
-    if (conflict) {
-      return res.status(400).json({ message: "Termin je zauzet" });
+    if (!current) {
+      return res.status(404).json({ message: "Termin ne postoji" });
     }
 
-    db.run(
-      "UPDATE appointments SET service = ?, date = ?, time = ?, endTime = ? WHERE id = ?",
-      [service, date, time, endTime, id],
-      function (err) {
+    service = service || current.service;
+    date = date || current.date;
+    time = time || current.time;
+
+    if (!service || !date || !time) {
+      return res.status(400).json({ message: "Nedostaju podaci" });
+    }
+
+    const newStart = timeToMinutes(time);
+    const endTime = calculateEndTime(time, service);
+    const newEnd = timeToMinutes(endTime);
+
+    db.all(
+      "SELECT * FROM appointments WHERE date = ? AND id != ?",
+      [date, id],
+      (err, rows) => {
         if (err) return res.status(500).json({ message: "Greška" });
 
-        res.json({ message: "Termin ažuriran" });
+        const conflict = rows.some((appointment) => {
+          const existingStart = timeToMinutes(appointment.time);
+          const existingEnd = timeToMinutes(
+            appointment.endTime || appointment.time
+          );
+
+          return newStart < existingEnd && newEnd > existingStart;
+        });
+
+        if (conflict) {
+          return res.status(400).json({ message: "Termin je zauzet" });
+        }
+
+        db.run(
+          "UPDATE appointments SET service = ?, date = ?, time = ?, endTime = ? WHERE id = ?",
+          [service, date, time, endTime, id],
+          function (err) {
+            if (err) return res.status(500).json({ message: "Greška" });
+
+            res.json({ message: "Termin ažuriran" });
+          }
+        );
       }
     );
   });

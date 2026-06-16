@@ -87,9 +87,19 @@ export default function ZakaziScreen() {
         Alert.alert("Greška", data.message);
         return;
       }
+      Alert.alert("Uspešno", "Termin je uspešno zakazan.", [
+        {
+          text: "OK",
+          onPress: () => {
+            setDatum("");
+            setVreme("");
+            setUsluge([]);
+            setVremena([]);
+            router.replace("/home");
+          },
+        },
+      ]);
 
-      Alert.alert("Uspešno", "Termin je zakazan.");
-      router.push("/moji-termini");
     } catch (error) {
       Alert.alert("Greška", "Server nije dostupan.");
     }

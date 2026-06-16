@@ -20,9 +20,7 @@ type Termin = {
   time: string;
 };
 
-/* =========================
-   HELPER - PROŠLI TERMINI
-========================= */
+
 const isPastDate = (dateStr:any) => {
   const today = new Date().toLocaleDateString("sr-RS", {
     day: "2-digit",

@@ -11,44 +11,32 @@ import {
 
 const API_URL = "http://192.168.8.8:3000";
 
-const slots = [
-  "09:00",
-  "10:00",
-  "11:00",
-  "12:00",
-  "13:00",
-  "14:00",
-  "15:00",
-  "16:00",
-  "17:00",
-];
-
 export default function SelectTime() {
   const params = useLocalSearchParams();
 
   const appointmentId = params.appointmentId;
-  const date = params.date;
-  const services = params.services;
+  const date = String(params.date || "");
+  const services = String(params.services || "");
 
-  const [occupied, setOccupied] = useState<string[]>([]);
+  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const loadOccupied = async () => {
+  const loadAvailableTimes = async () => {
     try {
-      const res = await fetch(
-        `${API_URL}/appointments/occupied/${date}`
-      );
-
+      const res = await fetch(`${API_URL}/available-times/${date}`);
       const data = await res.json();
-      setOccupied(data.occupied || []);
+
+      setAvailableTimes(data || []);
     } catch (e) {
       console.log(e);
-      setOccupied([]);
+      setAvailableTimes([]);
     }
   };
 
   useEffect(() => {
-    loadOccupied();
+    if (date) {
+      loadAvailableTimes();
+    }
   }, [date]);
 
   const update = async (time: string) => {
@@ -63,7 +51,7 @@ export default function SelectTime() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          services,
+          service: services,
           date,
           time,
         }),
@@ -72,14 +60,18 @@ export default function SelectTime() {
       const data = await res.json();
 
       if (!res.ok) {
-        Alert.alert("Greška", data.message || "Termin zauzet");
+        Alert.alert("Greška", data.message || "Termin je zauzet.");
         return;
       }
 
-      Alert.alert("Uspeh", "Termin izmenjen");
-      router.back();
+      Alert.alert("Uspeh", "Termin je uspešno izmenjen.", [
+        {
+          text: "OK",
+          onPress: () => router.replace("/home"),
+        },
+      ]);
     } catch (e) {
-      Alert.alert("Greška", "Server error");
+      Alert.alert("Greška", "Server nije dostupan.");
     } finally {
       setLoading(false);
     }
@@ -88,33 +80,23 @@ export default function SelectTime() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Izaberi novi termin</Text>
-      <Text style={styles.subtitle}>📅 {String(date)}</Text>
+      <Text style={styles.subtitle}>📅 {date}</Text>
+
+      {availableTimes.length === 0 && (
+        <Text style={styles.noTimes}>Nema slobodnih termina za ovaj datum.</Text>
+      )}
 
       <View style={styles.grid}>
-        {slots.map((t) => {
-          const isTaken = occupied.includes(t);
-
-          return (
-            <TouchableOpacity
-              key={t}
-              style={[
-                styles.slot,
-                isTaken && styles.disabledSlot,
-              ]}
-              disabled={isTaken || loading}
-              onPress={() => update(t)}
-            >
-              <Text
-                style={[
-                  styles.slotText,
-                  isTaken && styles.disabledText,
-                ]}
-              >
-                {t}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+        {availableTimes.map((t) => (
+          <TouchableOpacity
+            key={t}
+            style={styles.slot}
+            disabled={loading}
+            onPress={() => update(t)}
+          >
+            <Text style={styles.slotText}>{t}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
     </ScrollView>
   );
@@ -137,6 +119,11 @@ const styles = StyleSheet.create({
     color: "#666",
     fontWeight: "600",
   },
+  noTimes: {
+    color: "#8A817C",
+    fontSize: 15,
+    marginBottom: 15,
+  },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -150,15 +137,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   slotText: {
-    color: "white",
+    color: "#FFFFFF",
     fontWeight: "700",
     textAlign: "center",
-  },
-  disabledSlot: {
-    backgroundColor: "#ccc",
-    opacity: 0.6,
-  },
-  disabledText: {
-    color: "#666",
   },
 });
