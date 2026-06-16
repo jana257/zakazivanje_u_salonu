@@ -122,9 +122,7 @@ app.get("/available-times/:date", (req, res) => {
   const { date } = req.params;
 
   db.all("SELECT * FROM appointments WHERE date = ?", [date], (err, rows) => {
-    if (err) {
-      return res.status(500).json([]);
-    }
+    if (err) return res.status(500).json([]);
 
     const availableTimes = allTimes.filter((time) => {
       const currentStart = timeToMinutes(time);
@@ -145,7 +143,8 @@ app.get("/available-times/:date", (req, res) => {
 });
 
 app.post("/appointments", (req, res) => {
-  const { userId, service, date, time } = req.body;
+  const { userId, date, time } = req.body;
+  const service = req.body.service || req.body.services;
 
   if (!userId || !service || !date || !time) {
     return res.status(400).json({ message: "Nedostaju podaci za termin" });
@@ -156,9 +155,7 @@ app.post("/appointments", (req, res) => {
   const newEnd = timeToMinutes(endTime);
 
   db.all("SELECT * FROM appointments WHERE date = ?", [date], (err, rows) => {
-    if (err) {
-      return res.status(500).json({ message: "Greška" });
-    }
+    if (err) return res.status(500).json({ message: "Greška" });
 
     const conflict = rows.some((appointment) => {
       const existingStart = timeToMinutes(appointment.time);
@@ -177,27 +174,11 @@ app.post("/appointments", (req, res) => {
       "INSERT INTO appointments (userId, service, date, time, endTime) VALUES (?, ?, ?, ?, ?)",
       [userId, service, date, time, endTime],
       function (err) {
-        if (err) {
-          return res.status(500).json({ message: "Greška" });
-        }
+        if (err) return res.status(500).json({ message: "Greška" });
 
         res.json({ message: "Termin dodat", endTime });
       }
     );
-  });
-});
-
-app.get("/appointments/occupied/:date", (req, res) => {
-  const { date } = req.params;
-
-  db.all("SELECT time FROM appointments WHERE date = ?", [date], (err, rows) => {
-    if (err) {
-      return res.status(500).json({ message: "Greška" });
-    }
-
-    res.json({
-      occupied: rows.map((r) => r.time),
-    });
   });
 });
 
@@ -236,7 +217,8 @@ app.delete("/appointments/:id", (req, res) => {
 
 app.put("/appointments/:id", (req, res) => {
   const { id } = req.params;
-  let { service, date, time } = req.body;
+  let { date, time } = req.body;
+  let service = req.body.service || req.body.services;
 
   db.get("SELECT * FROM appointments WHERE id = ?", [id], (err, current) => {
     if (err) return res.status(500).json({ message: "Greška" });
@@ -265,9 +247,7 @@ app.put("/appointments/:id", (req, res) => {
 
         const conflict = rows.some((appointment) => {
           const existingStart = timeToMinutes(appointment.time);
-          const existingEnd = timeToMinutes(
-            appointment.endTime || appointment.time
-          );
+          const existingEnd = timeToMinutes(appointment.endTime || appointment.time);
 
           return newStart < existingEnd && newEnd > existingStart;
         });

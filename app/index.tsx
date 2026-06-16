@@ -13,7 +13,7 @@ import {
   View,
 } from "react-native";
 
-const API_URL = "http://192.168.8.8:3000";
+const API_URL = "http://192.168.1.65:3000";
 
 
 export default function AuthScreen() {

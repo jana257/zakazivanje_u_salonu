@@ -10,18 +10,18 @@ import {
   View,
 } from "react-native";
 
-const API_URL = "http://192.168.8.8:3000";
+const API_URL = "http://192.168.1.65:3000";
 
 type Termin = {
   id: number;
   userId: number;
-  services: string;
+  service?: string;
+  services?: string;
   date: string;
   time: string;
 };
 
-
-const isPastDate = (dateStr:any) => {
+const isPastDate = (dateStr: any) => {
   const today = new Date().toLocaleDateString("sr-RS", {
     day: "2-digit",
     month: "2-digit",
@@ -39,7 +39,7 @@ const isPastDate = (dateStr:any) => {
 
 export default function MojiTerminiScreen() {
   const [termini, setTermini] = useState<Termin[]>([]);
-  
+
   const ucitajTermine = async () => {
     const user = await AsyncStorage.getItem("user");
     const parsed = user ? JSON.parse(user) : null;
@@ -47,12 +47,8 @@ export default function MojiTerminiScreen() {
     if (!parsed?.userId) return;
 
     try {
-      const res = await fetch(
-        `${API_URL}/appointments/${parsed.userId}`
-      );
-
+      const res = await fetch(`${API_URL}/appointments/${parsed.userId}`);
       const data = await res.json();
-
       setTermini(data.appointments || []);
     } catch (err) {
       console.log(err);
@@ -93,27 +89,27 @@ export default function MojiTerminiScreen() {
     ]);
   };
 
- const izmeniTermin = (item: Termin) => {
-  const today = new Date().toLocaleDateString("sr-RS", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+  const izmeniTermin = (item: Termin) => {
+    const today = new Date().toLocaleDateString("sr-RS", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
 
-  if (item.date === today) {
-    Alert.alert("Greška", "Ne možeš menjati termin na isti dan.");
-    return;
-  }
+    if (item.date === today) {
+      Alert.alert("Greška", "Ne možeš menjati termin na isti dan.");
+      return;
+    }
 
-  router.push({
-    pathname: "/select-time",
-    params: {
-      appointmentId: item.id,
-      date: item.date,
-      services: item.services,
-    },
-  });
-};
+    router.push({
+      pathname: "/select-time",
+      params: {
+        appointmentId: item.id,
+        date: item.date,
+        services: item.service || item.services,
+      },
+    });
+  };
 
   return (
     <View style={styles.container}>
@@ -124,8 +120,8 @@ export default function MojiTerminiScreen() {
       ) : (
         <FlatList
           data={termini}
-          keyExtractor={(item: Termin) => item.id.toString()}
-          renderItem={({ item }: { item: Termin }) => {
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => {
             const expired = isPastDate(item.date);
 
             return (
@@ -141,7 +137,7 @@ export default function MojiTerminiScreen() {
                     expired && styles.expiredText,
                   ]}
                 >
-                  {item.services}
+                  {item.service || item.services}
                 </Text>
 
                 <View style={styles.row}>
@@ -258,7 +254,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontWeight: "700",
   },
-
   expiredCard: {
     backgroundColor: "#EDEDED",
     opacity: 0.7,
