@@ -14,9 +14,6 @@ const db = new sqlite3.Database("./database.db", (err) => {
   else console.log("SQLite connected");
 });
 
-/* ====================
-   TABLES
-========================= */
 db.serialize(() => {
   db.run(`
     CREATE TABLE IF NOT EXISTS users (
@@ -30,16 +27,54 @@ db.serialize(() => {
     CREATE TABLE IF NOT EXISTS appointments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       userId INTEGER,
-      services TEXT,
+      service TEXT,
       date TEXT,
-      time TEXT
+      time TEXT,
+      endTime TEXT
     )
   `);
+
+  db.run("ALTER TABLE appointments ADD COLUMN endTime TEXT", (err) => {
+    if (err && !err.message.includes("duplicate column name")) {
+      console.log("ALTER error:", err.message);
+    }
+  });
 });
 
-/* ====================
-   REGISTER
-========================= */
+const serviceDurations = {
+  "Šišanje": 30,
+  "Feniranje": 30,
+  "Farbanje": 60,
+  "Svečana frizura": 60,
+};
+
+const allTimes = ["10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00"];
+
+function timeToMinutes(time) {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+function minutesToTime(totalMinutes) {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function calculateEndTime(startTime, service) {
+  const services = service.split(",").map((s) => s.trim());
+
+  const totalDuration = services.reduce((sum, s) => {
+    return sum + (serviceDurations[s] || 0);
+  }, 0);
+
+  return minutesToTime(timeToMinutes(startTime) + totalDuration);
+}
+
+app.get("/", (req, res) => {
+  res.send("Backend radi");
+});
+
 app.post("/register", (req, res) => {
   const { email, password } = req.body;
 
@@ -58,79 +93,114 @@ app.post("/register", (req, res) => {
   );
 });
 
-/* =================
-   LOGIN
-========================= */
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
 
-  db.get(
-    "SELECT * FROM users WHERE email = ?",
-    [email],
-    (err, user) => {
-      if (err) return res.status(500).json({ message: "Greška" });
+  db.get("SELECT * FROM users WHERE email = ?", [email], (err, user) => {
+    if (err) return res.status(500).json({ message: "Greška" });
 
-      if (!user) {
-        return res.status(401).json({ message: "Nalog ne postoji" });
-      }
-
-      const ok = bcrypt.compareSync(password, user.password);
-
-      if (!ok) {
-        return res.status(401).json({ message: "Pogrešna lozinka" });
-      }
-
-      const token = jwt.sign(
-        { id: user.id, email: user.email },
-        "tajni_kljuc"
-      );
-
-      res.json({
-        token,
-        userId: user.id,
-      });
+    if (!user) {
+      return res.status(401).json({ message: "Nalog ne postoji" });
     }
-  );
+
+    const ok = bcrypt.compareSync(password, user.password);
+
+    if (!ok) {
+      return res.status(401).json({ message: "Pogrešna lozinka" });
+    }
+
+    const token = jwt.sign({ id: user.id, email: user.email }, "tajni_kljuc");
+
+    res.json({
+      token,
+      userId: user.id,
+    });
+  });
 });
 
-/* =======================
-   CREATE APPOINTMENT
-========================= */
-app.post("/appointments", (req, res) => {
-  let { userId, services, date, time } = req.body;
+app.get("/available-times/:date", (req, res) => {
+  const { date } = req.params;
 
-  if (!userId || !services || !date || !time) {
-    return res.status(400).json({ message: "Nedostaju podaci" });
+  db.all("SELECT * FROM appointments WHERE date = ?", [date], (err, rows) => {
+    if (err) {
+      return res.status(500).json([]);
+    }
+
+    const availableTimes = allTimes.filter((time) => {
+      const currentStart = timeToMinutes(time);
+      const currentEnd = currentStart + 60;
+
+      const busy = rows.some((appointment) => {
+        const existingStart = timeToMinutes(appointment.time);
+        const existingEnd = timeToMinutes(appointment.endTime || appointment.time);
+
+        return currentStart < existingEnd && currentEnd > existingStart;
+      });
+
+      return !busy;
+    });
+
+    res.json(availableTimes);
+  });
+});
+
+app.post("/appointments", (req, res) => {
+  const { userId, service, date, time } = req.body;
+
+  if (!userId || !service || !date || !time) {
+    return res.status(400).json({ message: "Nedostaju podaci za termin" });
   }
 
-  db.get(
-    "SELECT * FROM appointments WHERE date = ? AND time = ?",
-    [date, time],
-    (err, row) => {
-      if (err) return res.status(500).json({ message: "Greška" });
+  const newStart = timeToMinutes(time);
+  const endTime = calculateEndTime(time, service);
+  const newEnd = timeToMinutes(endTime);
 
-      if (row) {
-        return res.status(400).json({ message: "Termin zauzet" });
-      }
-
-      db.run(
-        "INSERT INTO appointments (userId, services, date, time) VALUES (?, ?, ?, ?)",
-        [userId, services, date, time],
-        function (err) {
-          if (err) {
-            return res.status(500).json({ message: "Greška" });
-          }
-
-          res.json({ message: "Termin dodat" });
-        }
-      );
+  db.all("SELECT * FROM appointments WHERE date = ?", [date], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ message: "Greška" });
     }
-  );
+
+    const conflict = rows.some((appointment) => {
+      const existingStart = timeToMinutes(appointment.time);
+      const existingEnd = timeToMinutes(appointment.endTime || appointment.time);
+
+      return newStart < existingEnd && newEnd > existingStart;
+    });
+
+    if (conflict) {
+      return res.status(400).json({
+        message: "Termin je zauzet u tom periodu",
+      });
+    }
+
+    db.run(
+      "INSERT INTO appointments (userId, service, date, time, endTime) VALUES (?, ?, ?, ?, ?)",
+      [userId, service, date, time, endTime],
+      function (err) {
+        if (err) {
+          return res.status(500).json({ message: "Greška" });
+        }
+
+        res.json({ message: "Termin dodat", endTime });
+      }
+    );
+  });
 });
 
-/* =========================
-   GET APPOINTMENTS BY USER
-========================= */
+app.get("/appointments/occupied/:date", (req, res) => {
+  const { date } = req.params;
+
+  db.all("SELECT time FROM appointments WHERE date = ?", [date], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ message: "Greška" });
+    }
+
+    res.json({
+      occupied: rows.map((r) => r.time),
+    });
+  });
+});
+
 app.get("/appointments/:userId", (req, res) => {
   const userId = parseInt(req.params.userId, 10);
 
@@ -141,105 +211,69 @@ app.get("/appointments/:userId", (req, res) => {
     });
   }
 
-  db.all(
-    "SELECT * FROM appointments WHERE userId = ?",
-    [userId],
-    (err, rows) => {
-      if (err) {
-        return res.status(500).json({
-          message: "Greška na serveru",
-          appointments: [],
-        });
-      }
-
-      res.json({
-        message: "OK",
-        appointments: rows,
+  db.all("SELECT * FROM appointments WHERE userId = ?", [userId], (err, rows) => {
+    if (err) {
+      return res.status(500).json({
+        message: "Greška na serveru",
+        appointments: [],
       });
     }
-  );
+
+    res.json({
+      message: "OK",
+      appointments: rows,
+    });
+  });
 });
 
-/* ===================
-   GET OCCUPIED TIMES
-========================= */
-app.get("/appointments/occupied/:date", (req, res) => {
-  const { date } = req.params;
-
-  db.all(
-    "SELECT time FROM appointments WHERE date = ?",
-    [date],
-    (err, rows) => {
-      if (err) {
-        return res.status(500).json({ message: "Greška" });
-      }
-
-      res.json({
-        occupied: rows.map((r) => r.time),
-      });
-    }
-  );
-});
-
-/* ======================
-   DELETE APPOINTMENT
-========================= */
 app.delete("/appointments/:id", (req, res) => {
-  db.run(
-    "DELETE FROM appointments WHERE id = ?",
-    [req.params.id],
-    function (err) {
-      if (err) return res.status(500).json({ message: "Greška" });
+  db.run("DELETE FROM appointments WHERE id = ?", [req.params.id], function (err) {
+    if (err) return res.status(500).json({ message: "Greška" });
 
-      res.json({ message: "Obrisano" });
-    }
-  );
+    res.json({ message: "Obrisano" });
+  });
 });
 
-/* ===================
-   UPDATE APPOINTMENT
-========================= */
 app.put("/appointments/:id", (req, res) => {
   const { id } = req.params;
-  const { services, date, time } = req.body;
+  const { service, date, time } = req.body;
 
-  //PROVERA DA LI JE TERMIN ZAUZET
-  db.get(
-    `SELECT * FROM appointments 
-     WHERE date = ? AND time = ? AND id != ?`,
-    [date, time, id],
-    (err, row) => {
-      if (err) {
-        return res.status(500).json({ message: "Greška" });
-      }
+  if (!service || !date || !time) {
+    return res.status(400).json({ message: "Nedostaju podaci" });
+  }
 
-      if (row) {
-        return res.status(400).json({
-          message: "Termin je zauzet",
-        });
-      }
+  const newStart = timeToMinutes(time);
+  const endTime = calculateEndTime(time, service);
+  const newEnd = timeToMinutes(endTime);
 
-      db.run(
-        `UPDATE appointments
-         SET services = ?, date = ?, time = ?
-         WHERE id = ?`,
-        [services, date, time, id],
-        function (err) {
-          if (err) {
-            return res.status(500).json({ message: "Greška" });
-          }
+  db.all("SELECT * FROM appointments WHERE date = ? AND id != ?", [date, id], (err, rows) => {
+    if (err) return res.status(500).json({ message: "Greška" });
 
-          res.json({ message: "Termin ažuriran" });
-        }
-      );
+    const conflict = rows.some((appointment) => {
+      const existingStart = timeToMinutes(appointment.time);
+      const existingEnd = timeToMinutes(appointment.endTime || appointment.time);
+
+      return newStart < existingEnd && newEnd > existingStart;
+    });
+
+    if (conflict) {
+      return res.status(400).json({ message: "Termin je zauzet" });
     }
-  );
+
+    db.run(
+      "UPDATE appointments SET service = ?, date = ?, time = ?, endTime = ? WHERE id = ?",
+      [service, date, time, endTime, id],
+      function (err) {
+        if (err) return res.status(500).json({ message: "Greška" });
+
+        res.json({ message: "Termin ažuriran" });
+      }
+    );
+  });
 });
 
-/* ==================
-   START SERVER
-========================= */
 const PORT = 3000;
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log("Server running on http://0.0.0.0:" + PORT);
 });

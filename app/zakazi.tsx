@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   ScrollView,
@@ -29,15 +29,28 @@ function napraviDatume() {
 }
 
 const datumi = napraviDatume();
-const vremena = ["10:00", "12:00", "14:00", "16:00", "18:00"];
 
-const API_URL = "http://172.20.10.2:3000";
+const API_URL = "http://192.168.8.8:3000";
 
 export default function ZakaziScreen() {
-
   const [datum, setDatum] = useState("");
   const [vreme, setVreme] = useState("");
   const [usluge, setUsluge] = useState<string[]>([]);
+  const [vremena, setVremena] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!datum) return;
+
+    fetch(`${API_URL}/available-times/${datum}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setVremena(data);
+        setVreme("");
+      })
+      .catch(() => {
+        Alert.alert("Greška", "Ne mogu da učitam slobodne termine.");
+      });
+  }, [datum]);
 
   const toggleUsluga = (naziv: string) => {
     if (usluge.includes(naziv)) {
@@ -53,51 +66,45 @@ export default function ZakaziScreen() {
       return;
     }
 
-    const user = await AsyncStorage.getItem("user");
-    const parsed = user ? JSON.parse(user) : null;
+    try {
+      const user = await AsyncStorage.getItem("user");
+      const parsed = user ? JSON.parse(user) : null;
 
-    const res = await fetch(`${API_URL}/appointments`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId: parsed?.userId,
-        services: usluge.join(", "),
-        date: datum,
-        time: vreme,
-      }),
-    });
+      const res = await fetch(`${API_URL}/appointments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: parsed?.userId,
+          service: usluge.join(", "),
+          date: datum,
+          time: vreme,
+        }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
-      Alert.alert("Greška", data.message);
-      return;
+      if (!res.ok) {
+        Alert.alert("Greška", data.message);
+        return;
+      }
+
+      Alert.alert("Uspešno", "Termin je zakazan.");
+      router.push("/moji-termini");
+    } catch (error) {
+      Alert.alert("Greška", "Server nije dostupan.");
     }
-
-    router.push("/moji-termini");
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-    >
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Zakazivanje</Text>
 
       <Text style={styles.label}>Izaberi usluge:</Text>
 
-      {[
-        "Šišanje",
-        "Feniranje",
-        "Farbanje",
-        "Svečana frizura",
-      ].map((item) => (
+      {["Šišanje", "Feniranje", "Farbanje", "Svečana frizura"].map((item) => (
         <TouchableOpacity
           key={item}
-          style={[
-            styles.option,
-            usluge.includes(item) && styles.selected,
-          ]}
+          style={[styles.option, usluge.includes(item) && styles.selected]}
           onPress={() => toggleUsluga(item)}
         >
           <Text style={styles.optionText}>{item}</Text>
@@ -117,6 +124,10 @@ export default function ZakaziScreen() {
       ))}
 
       <Text style={styles.label}>Izaberi vreme:</Text>
+
+      {datum && vremena.length === 0 && (
+        <Text style={styles.noTimes}>Nema slobodnih termina za ovaj datum.</Text>
+      )}
 
       {vremena.map((item) => (
         <TouchableOpacity
@@ -143,9 +154,18 @@ const styles = StyleSheet.create({
     paddingTop: 60,
   },
   content: { paddingBottom: 100 },
-  title: { fontSize: 32, fontWeight: "800", color: "#2E2A27", marginBottom: 20 },
-  label: { fontSize: 16, color: "#8A817C", marginTop: 10, marginBottom: 8 },
-  service: { fontSize: 24, fontWeight: "700", color: "#2E2A27", marginBottom: 10 },
+  title: {
+    fontSize: 32,
+    fontWeight: "800",
+    color: "#2E2A27",
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 16,
+    color: "#8A817C",
+    marginTop: 10,
+    marginBottom: 8,
+  },
   option: {
     backgroundColor: "#FFFFFF",
     padding: 14,
@@ -162,6 +182,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#2E2A27",
     fontWeight: "600",
+  },
+  noTimes: {
+    color: "#8A817C",
+    fontSize: 15,
+    marginBottom: 10,
   },
   button: {
     backgroundColor: "#B88A7B",
