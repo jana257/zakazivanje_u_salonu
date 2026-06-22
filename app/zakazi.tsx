@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   Alert,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -87,18 +88,28 @@ export default function ZakaziScreen() {
         Alert.alert("Greška", data.message);
         return;
       }
-      Alert.alert("Uspešno", "Termin je uspešno zakazan.", [
-        {
-          text: "OK",
-          onPress: () => {
-            setDatum("");
-            setVreme("");
-            setUsluge([]);
-            setVremena([]);
-            router.replace("/home");
+      if (Platform.OS === "web") {
+        window.alert("Uspešno ste zakazali termin.");
+
+        setDatum("");
+        setVreme("");
+        setUsluge([]);
+        setVremena([]);
+        router.replace("/home");
+      } else {
+        Alert.alert("Uspešno", "Termin je uspešno zakazan.", [
+          {
+            text: "OK",
+            onPress: () => {
+              setDatum("");
+              setVreme("");
+              setUsluge([]);
+              setVremena([]);
+              router.replace("/home");
+            },
           },
-        },
-      ]);
+        ]);
+      }
 
     } catch (error) {
       Alert.alert("Greška", "Server nije dostupan.");

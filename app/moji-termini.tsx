@@ -3,11 +3,10 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   Alert,
-  FlatList,
-  StyleSheet,
+  FlatList, Platform, StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
 const API_URL = "http://192.168.1.65:3000";
@@ -70,7 +69,26 @@ export default function MojiTerminiScreen() {
     });
 
     if (date === today) {
-      Alert.alert("Greška", "Ne možeš otkazati termin na isti dan.");
+      if (Platform.OS === "web") {
+        window.alert("Ne možeš otkazati termin na isti dan.");
+      } else {
+        Alert.alert("Greška", "Ne možeš otkazati termin na isti dan.");
+      }
+      return;
+    }
+
+    if (Platform.OS === "web") {
+      const potvrda = window.confirm(
+        "Da li ste sigurni da želite da otkažete termin?"
+      );
+
+      if (!potvrda) return;
+
+      await fetch(`${API_URL}/appointments/${id}`, {
+        method: "DELETE",
+      });
+
+      ucitajTermine();
       return;
     }
 
@@ -97,7 +115,11 @@ export default function MojiTerminiScreen() {
     });
 
     if (item.date === today) {
-      Alert.alert("Greška", "Ne možeš menjati termin na isti dan.");
+      if (Platform.OS === "web") {
+        window.alert("Ne možeš menjati termin na isti dan.");
+      } else {
+        Alert.alert("Greška", "Ne možeš menjati termin na isti dan.");
+      }
       return;
     }
 

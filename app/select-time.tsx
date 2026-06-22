@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   Alert,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -64,12 +65,17 @@ export default function SelectTime() {
         return;
       }
 
-      Alert.alert("Uspeh", "Termin je uspešno izmenjen.", [
-        {
-          text: "OK",
-          onPress: () => router.replace("/home"),
-        },
-      ]);
+      if (Platform.OS === "web") {
+        window.alert("Termin je uspešno izmenjen.");
+        router.replace("/home");
+      } else {
+        Alert.alert("Uspeh", "Termin je uspešno izmenjen.", [
+          {
+            text: "OK",
+            onPress: () => router.replace("/home"),
+          },
+        ]);
+      }
     } catch (e) {
       Alert.alert("Greška", "Server nije dostupan.");
     } finally {
